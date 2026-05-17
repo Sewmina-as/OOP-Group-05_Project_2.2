@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -31,7 +32,7 @@ public class User {
 
     @Column(nullable = false)
     @NotBlank(message = "Password cannot be empty!")
-    @Min(value = 8)
+    @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
 
     @Column(length = 300)
