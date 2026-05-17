@@ -7,16 +7,16 @@ target/
 # Logs
 *.log
 
-### IntelliJ IDEA ###
+# IntelliJ IDEA
 .idea/
 *.iws
 *.iml
 *.ipr
 
-### VS Code ###
+# VS Code
 .vscode/
 
-### Eclipse / STS ###
+# Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
@@ -25,7 +25,7 @@ target/
 .springBeans
 .sts4-cache
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
