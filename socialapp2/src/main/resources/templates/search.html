@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Search Results')}"></head>
+
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<div class="page-container">
+    <div class="form-page-container">
+
+        <h2 class="page-title">
+            Search Results
+            <span th:if="${keyword != null and !keyword.isEmpty()}"
+                  th:text="'for &quot;' + ${keyword} + '&quot;'"></span>
+        </h2>
+
+        <!-- Search Form -->
+        <div class="card">
+            <form th:action="@{/search}" method="get" class="search-form-page">
+                <input type="text" name="keyword" class="form-control"
+                       th:value="${keyword}" placeholder="Search people or posts..."
+                       autofocus>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+
+        <!-- People Results -->
+        <div th:if="${!users.isEmpty()}">
+            <h3 class="section-heading">People</h3>
+            <div th:each="user : ${users}" class="card search-result-item">
+                <a th:href="@{/profile/{id}(id=${user.id})}" class="search-user-link">
+                    <div class="avatar-md" th:text="${user.firstName.charAt(0)}"></div>
+                    <div>
+                        <strong th:text="${user.fullName}">Name</strong>
+                        <p class="text-muted" th:text="${user.email}">email</p>
+                        <p class="text-muted text-sm" th:if="${user.bio != null}"
+                           th:text="${user.bio}">Bio</p>
+                    </div>
+                </a>
+                <form th:unless="${user.id == currentUser.id}"
+                      th:action="@{/friends/request/{id}(id=${user.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="btn btn-outline btn-sm">+ Add Friend</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Post Results -->
+        <div th:if="${!posts.isEmpty()}">
+            <h3 class="section-heading">Posts</h3>
+            <div th:each="post : ${posts}" class="card post-card">
+                <div class="post-header">
+                    <a th:href="@{/profile/{id}(id=${post.author.id})}" class="post-author-link">
+                        <div class="avatar-sm" th:text="${post.author.firstName.charAt(0)}"></div>
+                        <div>
+                            <strong th:text="${post.author.fullName}">Author</strong>
+                            <span class="post-time"
+                                  th:text="${#temporals.format(post.createdAt, 'MMM d, yyyy')}">Date</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="post-content" th:text="${post.content}">Content</div>
+                <div class="post-stats">
+                    <span th:text="${post.likeCount} + ' likes'">0 likes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- No results -->
+        <div th:if="${keyword != null and !keyword.isEmpty() and users.isEmpty() and posts.isEmpty()}"
+             class="card empty-state">
+            <div class="empty-icon">🔍</div>
+            <p>No results found for "<strong th:text="${keyword}">keyword</strong>".</p>
+            <p>Try a different search term.</p>
+        </div>
+
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>
