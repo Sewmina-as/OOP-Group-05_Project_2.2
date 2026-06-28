@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Error')}"></head>
+
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<div class="page-container">
+    <div class="form-page-container">
+        <div class="card" style="text-align:center; padding: 60px 40px;">
+
+            <!-- Error code shown large -->
+            <div style="font-size: 5rem; font-weight: 900;
+                        color: var(--color-primary); line-height: 1;"
+                 th:text="${errorCode ?: '500'}">500</div>
+
+            <h2 style="margin: 16px 0 10px;"
+                th:text="${errorTitle ?: 'Unexpected Error'}">Error</h2>
+
+            <p style="color: var(--color-text-muted); margin-bottom: 28px;"
+               th:text="${errorMessage ?: 'Something went wrong. Please try again.'}">
+                Error message here.
+            </p>
+
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <a th:href="@{/feed}" class="btn btn-primary">🏠 Go Home</a>
+                <a onclick="history.back()" class="btn btn-outline" style="cursor:pointer;">
+                    ← Go Back
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>
