@@ -4,8 +4,11 @@ import com.social.app.model.Post;
 import com.social.app.model.User;
 import com.social.app.service.FriendService;
 import com.social.app.service.InteractionService;
+import com.social.app.service.NotificationService;
 import com.social.app.service.PostService;
 import com.social.app.service.UserService;
+import com.social.app.dto.NotificationDTO;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -13,6 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the home feed and post/comment/like actions.
@@ -24,15 +28,18 @@ public class FeedController {
     private final UserService userService;
     private final InteractionService interactionService;
     private final FriendService friendService;
+    private final NotificationService notificationService;
 
     public FeedController(PostService postService,
                           UserService userService,
                           InteractionService interactionService,
-                          FriendService friendService) {
+                          FriendService friendService,
+                          @Lazy NotificationService notificationService) {
         this.postService = postService;
         this.userService = userService;
         this.interactionService = interactionService;
         this.friendService = friendService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/feed")
@@ -47,11 +54,21 @@ public class FeedController {
                 ? postService.getDiscoverPosts()
                 : postService.getFeedForUser(currentUser);
 
+        // Notification data for navbar bell
+        long unreadCount = notificationService.getUnreadCount(currentUser.getId());
+        List<NotificationDTO> recentNotifications = notificationService
+                .getRecent(currentUser.getId(), 20)
+                .stream()
+                .map(NotificationDTO::from)
+                .collect(Collectors.toList());
+
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("posts", posts);
         model.addAttribute("activeTab", tab);
         model.addAttribute("friends", friendService.getFriendsOf(currentUser));
         model.addAttribute("pendingRequests", friendService.getPendingRequestsFor(currentUser));
+        model.addAttribute("unreadNotificationCount", unreadCount);
+        model.addAttribute("recentNotifications", recentNotifications);
 
         return "feed";
     }

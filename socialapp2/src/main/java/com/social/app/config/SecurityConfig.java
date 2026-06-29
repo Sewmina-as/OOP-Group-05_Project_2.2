@@ -52,8 +52,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/auth/register", "/auth/login",
-                        "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers(
+                        "/",
+                        "/auth/register",
+                        "/auth/login",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/uploads/**"          // profile picture uploads served statically
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

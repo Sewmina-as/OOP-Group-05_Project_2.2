@@ -15,12 +15,7 @@
 
             <div class="card user-card">
                 <div class="user-avatar-lg">
-                    <img th:if="${currentUser.profilePicture != null}"
-                         th:src="@{/uploads/{pic}(pic=${currentUser.profilePicture})}"
-                         alt="Profile Picture" class="avatar-img"/>
-                    <div th:unless="${currentUser.profilePicture != null}"
-                         class="avatar-placeholder"
-                         th:text="${currentUser.firstName.charAt(0)}"></div>
+                    <div class="avatar-placeholder" th:text="${currentUser.firstName.charAt(0)}">A</div>
                 </div>
                 <h3 class="user-card-name" th:text="${currentUser.fullName}">User Name</h3>
                 <p class="user-card-email" th:text="${currentUser.email}">email@example.com</p>
@@ -51,28 +46,6 @@
         <main class="feed-main">
 
             <div th:replace="~{fragments/layout :: flashMessages}"></div>
-
-            <!-- Pending Friend Requests -->
-            <div class="card requests-card" th:if="${!pendingRequests.isEmpty()}">
-                <h4 class="sidebar-title">
-                    <span class="req-icon">📬</span> Friend Requests
-                    <span class="badge-pill" th:text="${pendingRequests.size()}">0</span>
-                </h4>
-                <div th:each="req : ${pendingRequests}" class="friend-request-item">
-                    <div class="req-avatar" th:text="${req.sender.firstName.charAt(0)}"></div>
-                    <span class="req-name" th:text="${req.sender.fullName}">Sender Name</span>
-                    <div class="request-actions">
-                        <form th:action="@{/friends/accept/{id}(id=${req.id})}" method="post" style="display:inline;">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button class="btn btn-primary btn-xs">Accept</button>
-                        </form>
-                        <form th:action="@{/friends/reject/{id}(id=${req.id})}" method="post" style="display:inline;">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button class="btn btn-ghost btn-xs">Decline</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
 
             <!-- Create Post -->
             <div class="card create-post-card">
@@ -142,14 +115,14 @@
                 <div class="post-content" th:text="${post.content}">Post text here</div>
 
                 <div class="post-stats">
-          <span class="stat-item">
-            <span class="stat-icon">❤️</span>
-            <span th:text="${post.likeCount}">0</span> likes
-          </span>
                     <span class="stat-item">
-            <span class="stat-icon">💬</span>
-            <span th:text="${post.comments.size()}">0</span> comments
-          </span>
+                        <span class="stat-icon">❤️</span>
+                        <span th:text="${post.likeCount}">0</span> likes
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">💬</span>
+                        <span th:text="${post.comments.size()}">0</span> comments
+                    </span>
                 </div>
 
                 <div class="post-actions">
@@ -161,7 +134,9 @@
                             <span th:text="${post.isLikedByUser(currentUser.id)} ? '❤️ Liked' : '🤍 Like'">Like</span>
                         </button>
                     </form>
-                    <button class="action-btn" onclick="toggleCommentBox(this)"><span class="action-label">💬 Comment</span></button>
+                    <button class="action-btn" onclick="toggleCommentBox(this)">
+                        <span class="action-label">💬 Comment</span>
+                    </button>
                 </div>
 
                 <!-- Comments -->

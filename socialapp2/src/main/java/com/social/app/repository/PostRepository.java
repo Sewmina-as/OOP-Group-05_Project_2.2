@@ -21,27 +21,28 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /**
      * Fetch posts for the Friends feed:
      * - Posts by the current user
-     * - Posts by users who are friends with the current user
+     * - Posts by users who are friends with the current user (in either Friendship position)
+     *
+     * NOTE: JPQL does not support UNION; the subquery uses OR across both friendship directions.
      */
-    @Query("SELECT p FROM Post p WHERE p.author = :user " +
-            "OR p.author IN (" +
-            "  SELECT f.user2 FROM Friendship f WHERE f.user1 = :user " +
-            "  UNION " +
-            "  SELECT f.user1 FROM Friendship f WHERE f.user2 = :user" +
-            ") ORDER BY p.createdAt DESC")
+    @Query("SELECT DISTINCT p FROM Post p WHERE p.author = :user " +
+           "OR p.author IN (" +
+           "  SELECT f.user2 FROM Friendship f WHERE f.user1 = :user" +
+           ") " +
+           "OR p.author IN (" +
+           "  SELECT f.user1 FROM Friendship f WHERE f.user2 = :user" +
+           ") " +
+           "ORDER BY p.createdAt DESC")
     List<Post> findFeedPostsForUser(@Param("user") User user);
 
     /**
-     * Fetch ALL posts for the Discover / public timeline tab,
-     * excluding posts already visible in the friends feed (optional — here we show all).
-     * Newest first.
+     * Fetch ALL posts for the Discover / public timeline tab, newest first.
      */
     @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
     List<Post> findAllPostsForDiscover();
 
     /**
-     * Full-text search across post content.
-     * Case-insensitive LIKE query.
+     * Full-text search across post content (case-insensitive).
      */
     @Query("SELECT p FROM Post p WHERE LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY p.createdAt DESC")
     List<Post> searchByContent(@Param("keyword") String keyword);
