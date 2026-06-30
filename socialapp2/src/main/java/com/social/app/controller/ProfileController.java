@@ -1,11 +1,14 @@
 package com.social.app.controller;
 
+import com.social.app.dto.NotificationDTO;
 import com.social.app.dto.UpdateProfileDTO;
 import com.social.app.model.User;
 import com.social.app.service.FriendService;
+import com.social.app.service.NotificationService;
 import com.social.app.service.PostService;
 import com.social.app.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -15,28 +18,37 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * Controller for user profiles, friend management, and search.
- */
 @Controller
 public class ProfileController {
 
     private final UserService userService;
     private final PostService postService;
     private final FriendService friendService;
+    private final NotificationService notificationService;
 
     public ProfileController(UserService userService,
                              PostService postService,
-                             FriendService friendService) {
+                             FriendService friendService,
+                             @Lazy NotificationService notificationService) {
         this.userService = userService;
         this.postService = postService;
         this.friendService = friendService;
+        this.notificationService = notificationService;
     }
 
-    // =========================================================
-    // View Profile
-    // =========================================================
+    /** Injects notification data into every GET response from this controller. */
+    private void addNotifData(User currentUser, Model model) {
+        long unreadCount = notificationService.getUnreadCount(currentUser.getId());
+        List<NotificationDTO> recent = notificationService
+                .getRecent(currentUser.getId(), 20)
+                .stream()
+                .map(NotificationDTO::from)
+                .collect(Collectors.toList());
+        model.addAttribute("unreadNotificationCount", unreadCount);
+        model.addAttribute("recentNotifications", recent);
+    }
 
     @GetMapping("/profile/{userId}")
     public String viewProfile(
@@ -46,6 +58,8 @@ public class ProfileController {
 
         User currentUser = userService.getUserByEmail(userDetails.getUsername());
         User profileUser = userService.getUserById(userId);
+
+        addNotifData(currentUser, model);
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("profileUser", profileUser);
@@ -60,16 +74,13 @@ public class ProfileController {
         return "profile/view";
     }
 
-    // =========================================================
-    // Edit Profile
-    // =========================================================
-
     @GetMapping("/profile/edit")
     public String showEditProfileForm(
             @AuthenticationPrincipal UserDetails userDetails,
             Model model) {
 
         User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        addNotifData(currentUser, model);
 
         UpdateProfileDTO dto = new UpdateProfileDTO(
                 currentUser.getFirstName(),
@@ -101,10 +112,6 @@ public class ProfileController {
         redirectAttrs.addFlashAttribute("successMessage", "Profile updated successfully!");
         return "redirect:/profile/" + currentUser.getId();
     }
-
-    // =========================================================
-    // Friend Actions
-    // =========================================================
 
     @PostMapping("/friends/request/{receiverId}")
     public String sendFriendRequest(
@@ -161,10 +168,6 @@ public class ProfileController {
         return "redirect:/feed";
     }
 
-    // =========================================================
-    // Search
-    // =========================================================
-
     @GetMapping("/search")
     public String search(
             @RequestParam(required = false, defaultValue = "") String keyword,
@@ -172,9 +175,11 @@ public class ProfileController {
             Model model) {
 
         User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        addNotifData(currentUser, model);
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("pendingRequests", friendService.getPendingRequestsFor(currentUser));
         model.addAttribute("users", keyword.isEmpty() ? List.of() : userService.searchUsers(keyword));
         model.addAttribute("posts", keyword.isEmpty() ? List.of() : postService.searchPosts(keyword));
 

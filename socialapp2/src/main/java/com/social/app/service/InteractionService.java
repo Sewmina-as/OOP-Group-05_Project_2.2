@@ -8,6 +8,7 @@ import com.social.app.model.Post;
 import com.social.app.model.User;
 import com.social.app.repository.CommentRepository;
 import com.social.app.repository.LikeRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,14 @@ public class InteractionService {
 
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
-    public InteractionService(LikeRepository likeRepository, CommentRepository commentRepository) {
+    public InteractionService(LikeRepository likeRepository,
+                              CommentRepository commentRepository,
+                              @Lazy NotificationService notificationService) {
         this.likeRepository = likeRepository;
         this.commentRepository = commentRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -40,6 +45,7 @@ public class InteractionService {
             return false;
         } else {
             likeRepository.save(new Like(user, post));
+            notificationService.notifyLike(post.getAuthor(), user, post.getId());
             return true;
         }
     }
@@ -53,7 +59,9 @@ public class InteractionService {
     @Transactional
     public Comment addComment(Post post, User author, String content) {
         Comment comment = new Comment(content, author, post);
-        return commentRepository.save(comment);
+        Comment saved = commentRepository.save(comment);
+        notificationService.notifyComment(post.getAuthor(), author, post.getId(), saved.getId());
+        return saved;
     }
 
     /** Get all comments for a post */
@@ -61,7 +69,7 @@ public class InteractionService {
         return commentRepository.findByPostOrderByCreatedAtAsc(post);
     }
 
-    /** Delete a comment — only author can delete */
+    /** Delete a comment — only the author can delete */
     @Transactional
     public void deleteComment(Long commentId, User currentUser) {
         Comment comment = commentRepository.findById(commentId)

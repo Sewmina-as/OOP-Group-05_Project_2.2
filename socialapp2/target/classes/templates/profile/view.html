@@ -3,7 +3,7 @@
 
 <head th:replace="~{fragments/layout :: head('Profile')}"></head>
 
-<body>
+<body class="page-bg">
 <div th:replace="~{fragments/layout :: navbar}"></div>
 
 <div class="page-container">
@@ -12,57 +12,45 @@
         <!-- ============ PROFILE HEADER CARD ============ -->
         <div class="card profile-header-card">
 
-            <div class="profile-cover"></div>
-
-            <div class="profile-header-body">
-                <div class="profile-avatar-wrap">
-                    <img th:if="${profileUser.profilePicture != null}"
-                         th:src="@{/uploads/{pic}(pic=${profileUser.profilePicture})}"
-                         alt="Profile" class="profile-avatar-img">
-                    <div th:unless="${profileUser.profilePicture != null}"
-                         class="profile-avatar-placeholder"
-                         th:text="${profileUser.firstName.charAt(0)}"></div>
-                </div>
-
-                <div class="profile-info">
-                    <h2 th:text="${profileUser.fullName}">Full Name</h2>
-                    <p class="profile-email" th:text="${profileUser.email}">email@example.com</p>
-                    <p class="profile-joined">
-                        Joined:
-                        <span th:text="${#temporals.format(profileUser.joinDate, 'MMMM d, yyyy')}">Jan 1</span>
-                    </p>
-                </div>
-
-                <div class="profile-actions">
-                    <a th:if="${isOwnProfile}" th:href="@{/profile/edit}" class="btn btn-primary">
-                        Edit Profile
-                    </a>
-
-                    <span th:if="${!isOwnProfile and isFriend}" class="badge badge-green">✓ Friends</span>
-
-                    <span th:if="${!isOwnProfile and !isFriend and hasRequestSent}"
-                          class="badge badge-grey">Request Sent</span>
-
-                    <div th:if="${!isOwnProfile and !isFriend and hasRequestReceived}"
-                         class="inline-actions">
-                        <span>Wants to be friends</span>
-                    </div>
-
-                    <form th:if="${!isOwnProfile and !isFriend and !hasRequestSent and !hasRequestReceived}"
-                          th:action="@{/friends/request/{id}(id=${profileUser.id})}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <button type="submit" class="btn btn-primary">+ Add Friend</button>
-                    </form>
-                </div>
+            <div class="profile-avatar-wrap">
+                <div class="profile-avatar-placeholder" th:text="${profileUser.firstName.charAt(0)}">A</div>
             </div>
 
-            <p class="profile-bio" style="padding: 0 28px;"
-               th:text="${profileUser.bio ?: 'No bio yet.'}"
-               th:if="${profileUser.bio != null and !profileUser.bio.isEmpty()}">Bio</p>
-            <p class="profile-bio" style="padding: 0 28px;"
-               th:unless="${profileUser.bio != null and !profileUser.bio.isEmpty()}">
-                No bio yet.
-            </p>
+            <div class="profile-info">
+                <h2 th:text="${profileUser.fullName}">Full Name</h2>
+                <p class="profile-email" th:text="${profileUser.email}">email@example.com</p>
+                <p class="profile-bio" th:text="${profileUser.bio ?: 'No bio yet.'}"
+                   th:if="${profileUser.bio != null and !profileUser.bio.isEmpty()}">Bio</p>
+                <p class="profile-bio" th:unless="${profileUser.bio != null and !profileUser.bio.isEmpty()}">
+                    No bio yet.
+                </p>
+                <p class="profile-joined">
+                    Joined:
+                    <span th:text="${#temporals.format(profileUser.joinDate, 'MMMM d, yyyy')}">Jan 1</span>
+                </p>
+            </div>
+
+            <div class="profile-actions">
+                <a th:if="${isOwnProfile}" th:href="@{/profile/edit}" class="btn btn-primary">
+                    Edit Profile
+                </a>
+
+                <span th:if="${!isOwnProfile and isFriend}" class="badge badge-green">✓ Friends</span>
+
+                <span th:if="${!isOwnProfile and !isFriend and hasRequestSent}"
+                      class="badge badge-grey">Request Sent</span>
+
+                <div th:if="${!isOwnProfile and !isFriend and hasRequestReceived}"
+                     class="inline-actions">
+                    <span>Wants to be friends</span>
+                </div>
+
+                <form th:if="${!isOwnProfile and !isFriend and !hasRequestSent and !hasRequestReceived}"
+                      th:action="@{/friends/request/{id}(id=${profileUser.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="btn btn-primary">+ Add Friend</button>
+                </form>
+            </div>
         </div>
 
         <div th:replace="~{fragments/layout :: flashMessages}"></div>

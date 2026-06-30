@@ -4,15 +4,20 @@ import com.social.app.model.Post;
 import com.social.app.model.User;
 import com.social.app.service.FriendService;
 import com.social.app.service.InteractionService;
+import com.social.app.service.NotificationService;
 import com.social.app.service.PostService;
 import com.social.app.service.UserService;
+import com.social.app.dto.NotificationDTO;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the home feed and post/comment/like actions.
@@ -24,15 +29,18 @@ public class FeedController {
     private final UserService userService;
     private final InteractionService interactionService;
     private final FriendService friendService;
+    private final NotificationService notificationService;
 
     public FeedController(PostService postService,
                           UserService userService,
                           InteractionService interactionService,
-                          FriendService friendService) {
+                          FriendService friendService,
+                          @Lazy NotificationService notificationService) {
         this.postService = postService;
         this.userService = userService;
         this.interactionService = interactionService;
         this.friendService = friendService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/feed")
@@ -47,11 +55,21 @@ public class FeedController {
                 ? postService.getDiscoverPosts()
                 : postService.getFeedForUser(currentUser);
 
+        // Notification data for navbar bell
+        long unreadCount = notificationService.getUnreadCount(currentUser.getId());
+        List<NotificationDTO> recentNotifications = notificationService
+                .getRecent(currentUser.getId(), 20)
+                .stream()
+                .map(NotificationDTO::from)
+                .collect(Collectors.toList());
+
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("posts", posts);
         model.addAttribute("activeTab", tab);
         model.addAttribute("friends", friendService.getFriendsOf(currentUser));
         model.addAttribute("pendingRequests", friendService.getPendingRequestsFor(currentUser));
+        model.addAttribute("unreadNotificationCount", unreadCount);
+        model.addAttribute("recentNotifications", recentNotifications);
 
         return "feed";
     }
@@ -106,6 +124,21 @@ public class FeedController {
         return "redirect:" + referer;
     }
 
+
+    /** AJAX endpoint — returns JSON {liked, likeCount} so JS can update UI without page reload. */
+    @PostMapping("/posts/{postId}/like/ajax")
+    @ResponseBody
+    public Map<String, Object> toggleLikeAjax(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        Post post = postService.getPostById(postId);
+        boolean nowLiked = interactionService.toggleLike(post, currentUser);
+        Post updated = postService.getPostById(postId);
+        return Map.of("liked", nowLiked, "likeCount", (long) updated.getLikeCount());
+    }
+
     @PostMapping("/posts/{postId}/comment")
     public String addComment(
             @PathVariable Long postId,
@@ -143,4 +176,62 @@ public class FeedController {
 
         return "redirect:" + referer;
     }
+
+    /** AJAX comment — returns {commentId, authorName, authorInitial, content} */
+    @PostMapping("/posts/{postId}/comment/ajax")
+    @ResponseBody
+    public Map<String, Object> addCommentAjax(
+            @PathVariable Long postId,
+            @RequestParam String content,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        Post post = postService.getPostById(postId);
+
+        if (content == null || content.trim().isEmpty()) {
+            return Map.of("error", "Comment cannot be empty.");
+        }
+
+        var comment = interactionService.addComment(post, currentUser, content.trim());
+        Post updated = postService.getPostById(postId);
+        return Map.of(
+            "commentId",     comment.getId(),
+            "authorName",    currentUser.getFullName(),
+            "authorInitial", String.valueOf(currentUser.getFirstName().charAt(0)),
+            "authorId",      currentUser.getId(),
+            "content",       comment.getContent(),
+            "commentCount",  updated.getComments().size()
+        );
+    }
+
+    /** AJAX delete post — returns {success} */
+    @PostMapping("/posts/{postId}/delete/ajax")
+    @ResponseBody
+    public Map<String, Object> deletePostAjax(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        try {
+            postService.deletePost(postId, currentUser);
+            return Map.of("success", true);
+        } catch (Exception e) {
+            return Map.of("success", false, "error", e.getMessage());
+        }
+    }
+
+    /** AJAX delete comment — returns {success, commentCount} */
+    @PostMapping("/comments/{commentId}/delete/ajax")
+    @ResponseBody
+    public Map<String, Object> deleteCommentAjax(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = userService.getUserByEmail(userDetails.getUsername());
+        try {
+            interactionService.deleteComment(commentId, currentUser);
+            return Map.of("success", true);
+        } catch (Exception e) {
+            return Map.of("success", false, "error", e.getMessage());
+        }
+    }
+
 }

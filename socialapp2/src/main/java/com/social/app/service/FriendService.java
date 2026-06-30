@@ -6,6 +6,7 @@ import com.social.app.model.Friendship;
 import com.social.app.model.User;
 import com.social.app.repository.FriendRequestRepository;
 import com.social.app.repository.FriendshipRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +22,14 @@ public class FriendService {
 
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
+    private final NotificationService notificationService;
 
     public FriendService(FriendRequestRepository friendRequestRepository,
-                         FriendshipRepository friendshipRepository) {
+                         FriendshipRepository friendshipRepository,
+                         @Lazy NotificationService notificationService) {
         this.friendRequestRepository = friendRequestRepository;
         this.friendshipRepository = friendshipRepository;
+        this.notificationService = notificationService;
     }
 
     /** Send a friend request */
@@ -42,7 +46,9 @@ public class FriendService {
         }
 
         FriendRequest request = new FriendRequest(sender, receiver);
-        return friendRequestRepository.save(request);
+        FriendRequest saved = friendRequestRepository.save(request);
+        notificationService.notifyFriendRequest(receiver, sender, saved.getId());
+        return saved;
     }
 
     /** Accept a friend request — creates a Friendship */
@@ -58,7 +64,9 @@ public class FriendService {
         friendRequestRepository.save(request);
 
         Friendship friendship = new Friendship(request.getSender(), request.getReceiver());
-        return friendshipRepository.save(friendship);
+        Friendship saved = friendshipRepository.save(friendship);
+        notificationService.notifyFriendAccepted(request.getSender(), currentUser, requestId);
+        return saved;
     }
 
     /** Reject a friend request */
