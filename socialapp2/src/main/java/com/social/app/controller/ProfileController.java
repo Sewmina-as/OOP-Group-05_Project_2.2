@@ -179,6 +179,7 @@ public class ProfileController {
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("pendingRequests", friendService.getPendingRequestsFor(currentUser));
         model.addAttribute("users", keyword.isEmpty() ? List.of() : userService.searchUsers(keyword));
         model.addAttribute("posts", keyword.isEmpty() ? List.of() : postService.searchPosts(keyword));
 

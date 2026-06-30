@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
@@ -8,14 +7,12 @@
     <title th:text="${title} + ' | Verge'">Verge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" th:href="@{/css/style.css}">
-    <!-- CSRF token for AJAX (if needed later) -->
-    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf"        th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-    <!-- Apply saved theme before paint, so there's no light-mode flash -->
     <script>
         (function () {
-            const saved = localStorage.getItem('verge-theme');
-            if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            const t = localStorage.getItem('verge-theme');
+            if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         })();
     </script>
     <script th:src="@{/js/app.js}" defer></script>
@@ -23,69 +20,86 @@
 
 <!-- ===================== NAVBAR ===================== -->
 <nav th:fragment="navbar" class="navbar">
+
+    <!-- Brand -->
     <div class="navbar-brand">
         <a th:href="@{/feed}" class="brand-link">◢ Verge</a>
     </div>
 
-    <div class="navbar-search">
+    <!-- Center: search + nav pills (authenticated users only) -->
+    <div class="navbar-center">
         <form th:action="@{/search}" method="get" class="search-form">
             <input type="text" name="keyword" placeholder="Search people or posts..."
                    class="search-input" th:value="${keyword}">
-            <button type="submit" class="btn btn-sm btn-secondary" aria-label="Search">🔍</button>
+            <button type="submit" class="search-btn" aria-label="Search">🔍</button>
         </form>
+
+        <!-- Nav pills — shown when logged in (currentUser is in model) -->
+        <div th:if="${currentUser != null}" style="display:flex;gap:4px;margin-left:8px;">
+            <a th:href="@{/feed(tab='friends')}" class="nav-pill" id="navHome">
+                <span class="nav-icon">🏠</span> Home
+            </a>
+            <a th:href="@{/profile/{id}(id=${currentUser.id})}" class="nav-pill" id="navProfile">
+                <span class="nav-icon">👤</span> Profile
+            </a>
+        </div>
     </div>
 
-    <div class="navbar-actions" sec:authorize="isAuthenticated()">
+    <!-- Right actions — authenticated -->
+    <div th:if="${currentUser != null}" class="navbar-actions">
+
         <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-            <span class="icon-moon">🌙</span><span class="icon-sun">☀️</span>
+            <span class="icon-moon">🌙</span>
+            <span class="icon-sun">☀️</span>
         </button>
 
-        <!-- Notifications bell -->
+        <!-- Notification bell -->
         <div class="notif-wrap">
             <button type="button" class="theme-toggle notif-bell" id="notifBell" aria-label="Notifications">
                 🔔
-                <span th:if="${(unreadNotificationCount != null and unreadNotificationCount > 0) or (pendingRequests != null and !pendingRequests.isEmpty())}"
+                <span th:if="${(unreadNotificationCount != null and unreadNotificationCount > 0)
+                               or (pendingRequests != null and pendingRequests.size() > 0)}"
                       class="badge-count" id="notifBadge"
-                      th:text="${(unreadNotificationCount != null ? unreadNotificationCount : 0) + (pendingRequests != null ? pendingRequests.size() : 0)}">0</span>
+                      th:text="${(unreadNotificationCount != null ? unreadNotificationCount : 0)
+                                + (pendingRequests != null ? pendingRequests.size() : 0)}">0</span>
             </button>
 
             <div class="notif-dropdown" id="notifDropdown">
                 <div class="notif-dropdown-header">
-                    <span>Notifications</span>
-                    <form th:action="@{/notifications/read-all}" method="post" id="markAllReadForm">
+                    <span>🔔 Notifications</span>
+                    <form th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                          th:action="@{/notifications/read-all}" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <button type="submit" class="notif-mark-all"
-                                th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}">
-                            Mark all read
-                        </button>
+                        <button type="submit" class="notif-mark-all">Mark all read</button>
                     </form>
                 </div>
 
-                <div class="notif-list" id="notifList"
-                     th:if="${recentNotifications != null and !recentNotifications.isEmpty()}">
+                <!-- Notification items -->
+                <div th:if="${recentNotifications != null and recentNotifications.size() > 0}"
+                     class="notif-list" id="notifList">
                     <a th:each="notif : ${recentNotifications}"
-                       th:href="@{${notif.link}}"
-                       th:classappend="${notif.read} ? '' : ' notif-unread'"
-                       th:attr="data-notif-id=${notif.id}"
-                       class="notif-item notif-link">
+                       th:href="${notif.link}"
+                       th:class="${notif.read} ? 'notif-item notif-link' : 'notif-item notif-link notif-unread'"
+                       th:attr="data-notif-id=${notif.id}">
                         <div class="notif-avatar" th:text="${notif.actorInitial}">A</div>
                         <div class="notif-text">
                             <strong th:text="${notif.actorName}">Someone</strong>
-                            <span th:text="${notif.message}"> did something</span>
+                            <span th:text="${notif.message}"></span>
                         </div>
                         <span class="notif-type-icon"
                               th:text="${notif.type == 'LIKE'} ? '❤️' : (${notif.type == 'COMMENT'} ? '💬' : '👥')">·</span>
                     </a>
                 </div>
 
-                <!-- Friend requests still show their own inline accept/decline, separately from the feed above -->
-                <div class="notif-list" th:if="${pendingRequests != null and !pendingRequests.isEmpty()}">
-                    <div class="notif-section-label">Pending requests</div>
+                <!-- Pending friend requests -->
+                <div th:if="${pendingRequests != null and pendingRequests.size() > 0}"
+                     class="notif-list">
+                    <div class="notif-section-label">Friend Requests</div>
                     <div th:each="req : ${pendingRequests}" class="notif-item">
                         <div class="notif-avatar" th:text="${req.sender.firstName.charAt(0)}">A</div>
                         <div class="notif-text">
                             <strong th:text="${req.sender.fullName}">Sender</strong>
-                            <span> wants to be friends</span>
+                            <span> wants to connect</span>
                         </div>
                         <div class="notif-actions">
                             <form th:action="@{/friends/accept/{id}(id=${req.id})}" method="post">
@@ -100,37 +114,30 @@
                     </div>
                 </div>
 
-                <div class="notif-empty"
-                     th:if="${(recentNotifications == null or recentNotifications.isEmpty()) and (pendingRequests == null or pendingRequests.isEmpty())}">
+                <!-- Empty state -->
+                <div th:if="${(recentNotifications == null or recentNotifications.size() == 0)
+                              and (pendingRequests == null or pendingRequests.size() == 0)}"
+                     class="notif-empty">
                     <span class="notif-empty-icon">🔔</span>
-                    <p>You're all caught up — no new notifications.</p>
+                    <p>You're all caught up!</p>
                 </div>
             </div>
         </div>
 
-        <!-- Pending request badge -->
-        <a th:href="@{/feed}" class="nav-link">
-            Home
-        </a>
-
-        <a th:if="${currentUser != null}"
-           th:href="@{/profile/{id}(id=${currentUser.id})}"
-           class="nav-link">
-            My Profile
-        </a>
-
-        <!-- Logout form (POST required by Spring Security) -->
+        <!-- Logout -->
         <form th:action="@{/auth/logout}" method="post" style="display:inline;">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button type="submit" class="btn btn-outline btn-sm">Logout</button>
+            <button type="submit" class="btn-logout">Logout</button>
         </form>
     </div>
 
-    <div class="navbar-actions" sec:authorize="isAnonymous()">
+    <!-- Right actions — anonymous (no currentUser in model) -->
+    <div th:if="${currentUser == null}" class="navbar-actions">
         <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-            <span class="icon-moon">🌙</span><span class="icon-sun">☀️</span>
+            <span class="icon-moon">🌙</span>
+            <span class="icon-sun">☀️</span>
         </button>
-        <a th:href="@{/auth/login}" class="btn btn-ghost btn-sm">Login</a>
+        <a th:href="@{/auth/login}"    class="btn btn-ghost   btn-sm">Login</a>
         <a th:href="@{/auth/register}" class="btn btn-primary btn-sm">Register</a>
     </div>
 </nav>
@@ -150,7 +157,16 @@
 
 <!-- ===================== FOOTER ===================== -->
 <footer th:fragment="footer" class="footer">
-    <p>◢ Verge — Group 05, University of Kelaniya · © 2025</p>
+    <div class="footer-inner">
+        <a th:href="@{/feed}" class="footer-logo">◢ Verge</a>
+        <span class="footer-sep">·</span>
+        <span class="footer-copy">
+            © 2026
+            <span class="footer-author">Achintha Sewmina Gamage</span> — All rights reserved
+        </span>
+        <span class="footer-sep">·</span>
+        <span class="footer-made"><span class="footer-heart">♥</span> 🇱🇰</span>
+    </div>
 </footer>
 
 </html>
