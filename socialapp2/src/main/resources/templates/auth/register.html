@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Register')}"></head>
+
+<body class="auth-body">
+
+<div class="auth-container">
+    <div class="auth-card">
+
+        <div class="auth-header">
+            <h1 class="brand-title">◢ Verge</h1>
+            <p class="brand-subtitle">Create your free account</p>
+        </div>
+
+        <form th:action="@{/auth/register}" th:object="${registerDTO}" method="post" class="auth-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" th:field="*{firstName}"
+                           class="form-control" placeholder="Achintha" required>
+                    <span class="field-error" th:if="${#fields.hasErrors('firstName')}"
+                          th:errors="*{firstName}"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" th:field="*{lastName}"
+                           class="form-control" placeholder="Sewmina" required>
+                    <span class="field-error" th:if="${#fields.hasErrors('lastName')}"
+                          th:errors="*{lastName}"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" th:field="*{email}"
+                       class="form-control" placeholder="achintha@example.com" required>
+                <span class="field-error" th:if="${#fields.hasErrors('email')}"
+                      th:errors="*{email}"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" th:field="*{password}"
+                       class="form-control" placeholder="Min. 8 characters" required>
+                <span class="field-error" th:if="${#fields.hasErrors('password')}"
+                      th:errors="*{password}"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                       class="form-control" placeholder="Re-enter password" required>
+                <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}"
+                      th:errors="*{confirmPassword}"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+
+        <p class="auth-footer-text">
+            Already have an account?
+            <a th:href="@{/auth/login}" class="link-accent">Sign in</a>
+        </p>
+
+        <p class="auth-copyright">© 2026 <span class="auth-copyright-name">Achintha Sewmina Gamage</span> — All rights reserved</p>
+
+    </div>
+</div>
+
+</body>
+</html>
