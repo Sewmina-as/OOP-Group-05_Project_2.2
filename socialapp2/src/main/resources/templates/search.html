@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Search')}"></head>
+
+<body class="page-bg">
+
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<div class="page-container">
+    <div class="form-page-container">
+
+        <div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+        <!-- Search bar -->
+        <div class="card">
+            <form th:action="@{/search}" method="get" class="search-form-page">
+                <input type="text" name="keyword" class="form-control"
+                       placeholder="Search people or posts..."
+                       th:value="${keyword}" autofocus/>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+
+        <!-- Landing state (no keyword typed yet) -->
+        <div th:if="${keyword == null or keyword.trim().isEmpty()}" class="card search-landing">
+            <span class="search-landing-icon">🔍</span>
+            <div class="search-landing-title">Find people and posts</div>
+            <p class="search-landing-hint">Type a name, keyword or topic above to get started.</p>
+        </div>
+
+        <!-- Results -->
+        <div th:if="${keyword != null and !keyword.trim().isEmpty()}">
+
+            <!-- People results -->
+            <div class="card" th:if="${users != null}">
+                <h4 class="section-heading">
+                    👥 People
+                    <span class="badge badge-grey" th:if="${!users.isEmpty()}"
+                          th:text="${users.size()} + ' found'"></span>
+                </h4>
+
+                <div th:if="${users.isEmpty()}" class="empty-state" style="padding:24px 0;">
+                    <div class="empty-icon" style="font-size:28px;">😕</div>
+                    <p>No people found for "<span th:text="${keyword}"></span>"</p>
+                </div>
+
+                <div th:each="user : ${users}" class="search-result-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+                    <a th:href="@{/profile/{id}(id=${user.id})}" class="search-user-link">
+                        <div class="avatar-md"
+                             th:text="${user.firstName.charAt(0)}"
+                             style="background: linear-gradient(135deg, var(--primary), var(--accent));
+                                    color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; border-radius:50%; flex-shrink:0;">
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:15px;" th:text="${user.fullName}">Name</div>
+                            <div class="text-sm text-muted" th:text="${user.email}">email</div>
+                            <div class="text-sm" th:if="${user.bio != null and !user.bio.isEmpty()}"
+                                 style="color:var(--text-secondary); margin-top:2px;"
+                                 th:text="${#strings.abbreviate(user.bio, 80)}">Bio</div>
+                        </div>
+                    </a>
+                    <a th:href="@{/profile/{id}(id=${user.id})}" class="btn btn-outline btn-sm">
+                        View Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Post results -->
+            <div class="card" th:if="${posts != null}">
+                <h4 class="section-heading">
+                    📝 Posts
+                    <span class="badge badge-grey" th:if="${!posts.isEmpty()}"
+                          th:text="${posts.size()} + ' found'"></span>
+                </h4>
+
+                <div th:if="${posts.isEmpty()}" class="empty-state" style="padding:24px 0;">
+                    <div class="empty-icon" style="font-size:28px;">📭</div>
+                    <p>No posts found for "<span th:text="${keyword}"></span>"</p>
+                </div>
+
+                <div th:each="post : ${posts}"
+                     style="padding:14px 0; border-bottom:1px solid var(--border);">
+                    <a th:href="@{/profile/{id}(id=${post.author.id})}"
+                       style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <div class="avatar-xs"
+                             th:text="${post.author.firstName.charAt(0)}"
+                             style="background:linear-gradient(135deg,var(--primary),var(--accent));
+                                    color:#fff;font-weight:700;display:flex;align-items:center;
+                                    justify-content:center;border-radius:50%;flex-shrink:0;">
+                        </div>
+                        <span style="font-weight:600;font-size:14px;" th:text="${post.author.fullName}">Author</span>
+                        <span class="text-muted text-sm"
+                              th:text="${#temporals.format(post.createdAt,'MMM d, yyyy')}">Date</span>
+                    </a>
+                    <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;"
+                       th:text="${#strings.abbreviate(post.content, 200)}">Content</p>
+                    <div style="display:flex;gap:14px;margin-top:8px;font-size:12px;color:var(--text-muted);">
+                        <span>❤️ <span th:text="${post.likeCount}">0</span></span>
+                        <span>💬 <span th:text="${post.comments.size()}">0</span></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+
+</body>
+</html>
