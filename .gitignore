@@ -1,0 +1,17 @@
+# Maven build files
+target/
+**/target/
+
+# IntelliJ files
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Environment / local config
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
